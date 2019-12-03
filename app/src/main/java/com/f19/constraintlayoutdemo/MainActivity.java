@@ -1,5 +1,6 @@
 package com.f19.constraintlayoutdemo;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
@@ -14,6 +15,13 @@ public class MainActivity extends AppCompatActivity {
     EditText result;
     EditText newNumber;
     TextView operation;
+
+    // Variables to hold the operands and type of calculations
+    private Double operand1 = null;
+    private String pendingOperation = "=";
+
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -68,7 +76,16 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Button btn = (Button) v;
-                operation.setText(btn.getText().toString());
+                String op = btn.getText().toString();
+                String value = newNumber.getText().toString();
+                try {
+                    Double doubleValue = Double.valueOf(value);
+                    performOperation(doubleValue);
+                } catch (NumberFormatException e) {
+                    newNumber.setText("");
+                }
+                pendingOperation = op;
+                operation.setText(op);
             }
         };
 
@@ -78,7 +95,75 @@ public class MainActivity extends AppCompatActivity {
         buttonDivide.setOnClickListener(opListener);
         buttonEquals.setOnClickListener(opListener);
 
+        Button btnNg = findViewById(R.id.buttonNeg);
+        btnNg.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String value = newNumber.getText().toString();
+                if(value.length() == 0) {
+                    newNumber.setText("-");
+                } else {
+                    try {
+                        Double doubleValue = Double.valueOf(value);
+                        doubleValue *= -1;
+                        newNumber.setText(doubleValue.toString());
+                    } catch(NumberFormatException e) {
+                        // newNumber was "-" or ".", so clear it
+                        newNumber.setText("");
+                    }
+                }
+            }
+        });
 
+
+
+    }
+
+    private void performOperation(Double value) {
+        if (operand1 == null) {
+            operand1 = value;
+        } else {
+            switch (pendingOperation) {
+                case "=":
+                    operand1 = value;
+                    break;
+                case "/":
+                    if (value == 0) {
+                        operand1 = 0.0;
+                    } else {
+                        operand1 /= value;
+                    }
+                    break;
+                case "*":
+                    operand1 *= value;
+                    break;
+                case "-":
+                    operand1 -= value;
+                    break;
+                case "+":
+                    operand1 += value;
+                    break;
+            }
+        }
+
+        result.setText(operand1.toString());
+        newNumber.setText("");
+    }
+
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        if (operand1 != null)
+            outState.putDouble("OPERAND1_STATE", operand1);
+        outState.putString("OPERATOR_STATE", pendingOperation);
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        operand1 = savedInstanceState.getDouble("OPERAND1_STATE");
+        pendingOperation = savedInstanceState.getString("OPERATOR_STATE");
+        operation.setText(pendingOperation);
 
     }
 }
